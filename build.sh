@@ -29,6 +29,17 @@ function upload() {
 
 cd $shell_path
 
+# 编译trojan-web
+echo "Building trojan-web..."
+cd trojan-web
+npm run build
+cd ..
+
+# 清理并复制web模板文件
+echo "Copying web templates..."
+rm -rf web/templates/*
+cp -r trojan-web/dist/* web/templates/
+
 version=`git describe --tags $(git rev-list --tags --max-count=1)`
 now=`TZ=Asia/Shanghai date "+%Y%m%d-%H%M"`
 go_version=`go version|awk '{print $3,$4}'`
@@ -58,5 +69,5 @@ if [[ $# == 0 ]];then
 
 	cd $shell_path
 
-	rm -rf result
+	# rm -rf result
 fi
