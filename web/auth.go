@@ -124,11 +124,11 @@ func RequestUsername(c *gin.Context) string {
 }
 
 // Auth 权限router
-func Auth(r *gin.Engine, timeout int) *jwt.GinJWTMiddleware {
+func Auth(engine *gin.Engine, r *gin.RouterGroup, timeout int) *jwt.GinJWTMiddleware {
 	jwtInit(timeout)
 
 	newInstall := gin.H{"code": 201, "message": "No administrator account found inside the database", "data": nil}
-	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
+	engine.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)
 		fmt.Printf("NoRoute claims: %#v\n", claims)
 		c.JSON(404, gin.H{"code": 404, "message": "Page not found"})
@@ -178,8 +178,6 @@ func Auth(r *gin.Engine, timeout int) *jwt.GinJWTMiddleware {
 		authO.POST("/reset_pass", updateUser)
 		authO.POST("/logout", authMiddleware.LogoutHandler)
 		authO.POST("/refresh_token", authMiddleware.RefreshHandler)
-		// 系统初始化后，注册功能只能在授权后使用
-		authO.POST("/register", updateUser)
 	}
 	return authMiddleware
 }

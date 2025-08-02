@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 	"strconv"
+	"strings"
 	"trojan/core"
 	"trojan/util"
 	"trojan/web/controller"
@@ -16,7 +17,7 @@ import (
 //go:embed templates/*
 var f embed.FS
 
-func userRouter(router *gin.Engine) {
+func userRouter(router *gin.RouterGroup) {
 	user := router.Group("/trojan/user")
 	{
 		user.GET("", func(c *gin.Context) {
@@ -62,7 +63,7 @@ func userRouter(router *gin.Engine) {
 	}
 }
 
-func trojanRouter(router *gin.Engine) {
+func trojanRouter(router *gin.RouterGroup) {
 	router.POST("/trojan/start", func(c *gin.Context) {
 		c.JSON(200, controller.Start())
 	})
@@ -104,7 +105,7 @@ func trojanRouter(router *gin.Engine) {
 	})
 }
 
-func dataRouter(router *gin.Engine) {
+func dataRouter(router *gin.RouterGroup) {
 	data := router.Group("/trojan/data")
 	{
 		data.POST("", func(c *gin.Context) {
@@ -130,7 +131,7 @@ func dataRouter(router *gin.Engine) {
 	}
 }
 
-func commonRouter(router *gin.Engine) {
+func commonRouter(router *gin.RouterGroup) {
 	common := router.Group("/common")
 	{
 		common.GET("/version", func(c *gin.Context) {
@@ -155,17 +156,23 @@ func commonRouter(router *gin.Engine) {
 	}
 }
 
-func staticRouter(router *gin.Engine) {
+func staticRouter(router *gin.RouterGroup) {
 	staticFs, _ := fs.Sub(f, "templates/static")
 	router.StaticFS("/static", http.FS(staticFs))
 
 	router.GET("/", func(c *gin.Context) {
 		indexHTML, _ := f.ReadFile("templates/" + "index.html")
-		c.Writer.Write(indexHTML)
+		// Add base URL to the HTML
+		htmlContent := string(indexHTML)
+		webPath, _ := core.GetValue("web_path")
+		if webPath != "" {
+			htmlContent = strings.Replace(htmlContent, "<head>", "<head>\n    <base href=\"/"+webPath+"/\">", 1)
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlContent))
 	})
 }
 
-func noTokenRouter(router *gin.Engine) {
+func noTokenRouter(router *gin.RouterGroup) {
 	router.GET("/trojan/user/subscribe", func(c *gin.Context) {
 		controller.ClashSubInfo(c)
 	})
@@ -173,12 +180,17 @@ func noTokenRouter(router *gin.Engine) {
 
 // Start web启动入口
 func Start(host string, port, timeout int, isSSL bool) {
-	router := gin.Default()
-	router.SetTrustedProxies(nil)
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	engine := gin.Default()
+	engine.SetTrustedProxies(nil)
+	engine.Use(gzip.Gzip(gzip.DefaultCompression))
+	webPath, _ := core.GetValue("web_path")
+	if webPath == "" {
+		webPath = "/"
+	}
+	router := engine.Group(webPath)
 	staticRouter(router)
 	noTokenRouter(router)
-	router.Use(Auth(router, timeout).MiddlewareFunc())
+	router.Use(Auth(engine, router, timeout).MiddlewareFunc())
 	trojanRouter(router)
 	userRouter(router)
 	dataRouter(router)
@@ -189,8 +201,8 @@ func Start(host string, port, timeout int, isSSL bool) {
 	if isSSL {
 		config := core.GetConfig()
 		ssl := &config.SSl
-		router.RunTLS(fmt.Sprintf("%s:%d", host, port), ssl.Cert, ssl.Key)
+		engine.RunTLS(fmt.Sprintf("%s:%d", host, port), ssl.Cert, ssl.Key)
 	} else {
-		router.Run(fmt.Sprintf("%s:%d", host, port))
+		engine.Run(fmt.Sprintf("%s:%d", host, port))
 	}
 }
