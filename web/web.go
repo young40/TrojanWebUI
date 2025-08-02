@@ -166,7 +166,9 @@ func staticRouter(router *gin.RouterGroup) {
 		htmlContent := string(indexHTML)
 		webPath, _ := core.GetValue("web_path")
 		if webPath != "" {
-			htmlContent = strings.Replace(htmlContent, "<head>", "<head>\n    <base href=\"/"+webPath+"/\">", 1)
+				htmlContent = strings.Replace(htmlContent, "<head>", "<head>\n    <base href=\"/"+webPath+"/\">", 1)
+			// Set API_PREFIX with webpath
+			htmlContent = strings.Replace(htmlContent, "//window.API_PREFIX = 'REPLACE_ME'; // 默认为空，可以在部署时修改", "window.API_PREFIX = '" + webPath + "';", 1)
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlContent))
 	})
