@@ -35,6 +35,34 @@ func SetWebPath() {
 	}
 }
 
+// ShowRealm 显示Realm值
+func ShowRealm() {
+	realm, _ := core.GetValue("realm")
+	if realm == "" {
+	realm = "test"
+	}
+	fmt.Printf("当前Realm: %s\n", util.Green(realm))
+}
+
+// SetRealm 设置Realm值
+func SetRealm() {
+	realm, _ := core.GetValue("realm")
+	if realm == "" {
+	realm = "test"
+	}
+	newRealm := util.Input(fmt.Sprintf("请输入新的Realm值 [%s]: ", realm), realm)
+	if newRealm == "" {
+		fmt.Println("未作更改!")
+		return
+	}
+	err := core.SetValue("realm", newRealm)
+	if err != nil {
+		fmt.Println(util.Red("设置失败:"), err)
+	} else {
+		fmt.Println(util.Green("Realm已更新"))
+	}
+}
+
 // WebMenu web管理菜单
 func WebMenu() {
 	fmt.Println()
@@ -43,6 +71,8 @@ func WebMenu() {
 		"修改显示的域名(非申请证书)",
 		"显示Web路径",
 		"修改Web路径",
+		"显示Realm值",
+		"修改Realm值",
 	}
 	switch util.LoopInput("请选择: ", menu, true) {
 	case 1:
@@ -53,6 +83,10 @@ func WebMenu() {
 		ShowWebPath()
 	case 4:
 		SetWebPath()
+	case 5:
+		ShowRealm()
+	case 6:
+		SetRealm()
 	}
 }
 

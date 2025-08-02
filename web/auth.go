@@ -32,8 +32,12 @@ func getSecretKey() string {
 }
 
 func jwtInit(timeout int) {
+	realm, _ := core.GetValue("realm")
+	if realm == "" {
+		realm = "test"
+	}
 	authMiddleware, err = jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "trojan-manager",
+		Realm:       realm,
 		Key:         []byte(getSecretKey()),
 		Timeout:     time.Minute * time.Duration(timeout),
 		MaxRefresh:  time.Minute * time.Duration(timeout),
