@@ -7,15 +7,52 @@ import (
 	"trojan/util"
 )
 
+// ShowWebPath 显示Web路径
+func ShowWebPath() {
+	path, _ := core.GetValue("web_path")
+	if path == "" {
+		path = "默认路径(未设置)"
+	}
+	fmt.Println("当前Web路径:", util.Green(path))
+}
+
+// SetWebPath 设置Web路径
+func SetWebPath() {
+	currentPath, _ := core.GetValue("web_path")
+	if currentPath != "" {
+		fmt.Println("当前Web路径:", util.Green(currentPath))
+	}
+	newPath := util.Input("请输入新的Web路径: ", "")
+	if newPath == "" {
+		fmt.Println("已取消修改")
+		return
+	}
+	err := core.SetValue("web_path", newPath)
+	if err != nil {
+		fmt.Println(util.Red("设置失败:"), err)
+	} else {
+		fmt.Println(util.Green("Web路径已更新"))
+	}
+}
+
 // WebMenu web管理菜单
 func WebMenu() {
 	fmt.Println()
-	menu := []string{"重置web管理员密码", "修改显示的域名(非申请证书)"}
+	menu := []string{
+		"重置web管理员密码",
+		"修改显示的域名(非申请证书)",
+		"显示Web路径",
+		"修改Web路径",
+	}
 	switch util.LoopInput("请选择: ", menu, true) {
 	case 1:
 		ResetAdminPass()
 	case 2:
 		SetDomain("")
+	case 3:
+		ShowWebPath()
+	case 4:
+		SetWebPath()
 	}
 }
 
